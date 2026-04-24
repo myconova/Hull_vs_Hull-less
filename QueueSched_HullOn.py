@@ -1,4 +1,5 @@
 from jsonschema import validate, ValidationError
+from collections import deque
 
 # Job Fields
 class JobFields:
@@ -18,7 +19,11 @@ job_schema = {
     "additionalProperties": False
 }
 
-job_input = []
+job_input = [
+    {"id": "job_a", "submission_time": 0, "duration": 3},
+    {"id": "job_b", "submission_time": 2, "duration": 1},
+    {"id": "job_c", "submission_time": 2, "duration": 2}
+]
 
 def validate_jobs(job_input, job_schema):
     if not isinstance(job_input, list):
@@ -43,6 +48,54 @@ def validate_jobs(job_input, job_schema):
 
     return True, f"All jobs are valid."
 
+# FIFO scheduling  
 
+def run_fifo(job_input):
+    is_valid, validation_message = validate_jobs(job_input, job_schema)
+    if not is_valid:
+        return False, validation_message, []
+    
+    sorted_jobs = sorted(job_input, key=lambda x: x['submission_time'])
 
+    clock = 0
+    next_job_index = 0
+    job_queue = deque()
+    current_job = None
+    remaining_time = 0
+    completed_jobs = []
 
+    while len(completed_jobs) < len(sorted_jobs):
+
+        while next_job_index < len(sorted_jobs) and sorted_jobs[next_job_index]['submission_time'] <= clock:
+            job_queue.append(sorted_jobs[next_job_index])
+            next_job_index += 1
+
+        if current_job is None and len(job_queue) > 0:
+            current_job = job_queue.popleft()
+            remaining_time = current_job['duration']
+            current_job['start_time'] = clock
+            current_job['wait_time'] = clock - current_job['submission_time']
+
+        if current_job is not None:
+            remaining_time -= 1
+            if remaining_time == 0:
+                completion_time = clock + 1
+                current_job['completion_time'] = completion_time
+                current_job['turnaround_time'] = completion_time - current_job['submission_time']   
+                completed_jobs.append(current_job)
+                current_job = None
+
+            clock += 1
+
+        else:
+            if next_job_index < len(sorted_jobs):
+                clock = sorted_jobs[next_job_index]['submission_time']
+            else:
+                break
+
+    return True, f"FIFO run complete", completed_jobs
+
+is_valid, validation_message, completed_jobs = run_fifo(job_input)
+print(is_valid, validation_message)
+for job in completed_jobs:
+    print(job)
