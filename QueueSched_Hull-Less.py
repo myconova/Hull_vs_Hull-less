@@ -58,13 +58,14 @@ def run_fifo(job_input):
     sorted_jobs = sorted(job_input, key=lambda x: x['submission_time'])
 
     clock = 0
+    max_ticks = 100 
     next_job_index = 0
     job_queue = deque()
     current_job = None
     remaining_time = 0
     completed_jobs = []
 
-    while len(completed_jobs) < len(sorted_jobs):
+    while len(completed_jobs) < len(sorted_jobs) and clock < max_ticks:
 
         while next_job_index < len(sorted_jobs) and sorted_jobs[next_job_index]['submission_time'] <= clock:
             job_queue.append(sorted_jobs[next_job_index])
@@ -92,8 +93,14 @@ def run_fifo(job_input):
                 clock = sorted_jobs[next_job_index]['submission_time']
             else:
                 break
-
-    return True, f"FIFO run complete", completed_jobs
+    
+    if len(completed_jobs) == len(sorted_jobs):
+        return True, f"FIFO run complete", completed_jobs
+    else:
+        if current_job is not None:
+            return False, f"FIFO run incomplete: {current_job[JobFields.ID]} reached max ticks ({max_ticks})", completed_jobs
+        else:
+            return False, f"FIFO run incomplete: reached max ticks ({max_ticks})", completed_jobs
 
 is_valid, validation_message, completed_jobs = run_fifo(job_input)
 print(is_valid, validation_message)

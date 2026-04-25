@@ -1,0 +1,32 @@
+Hull-Less Experiment Notes
+
+Date: 2026-04-24
+Experiment: 1
+Boundary Removed: duration minimum
+Input:
+- job_a: submission_time=0, duration=-1
+- job_b: submission_time=1, duration=2
+- job_c: submission_time=2, duration=1
+
+Observed Behavior:
+-job_a started immediately
+-scheduler entered into an infinite loop that had to be manually interrupted. 
+
+Interpretation: a single invalid duration created a job that never converge to completion, blocking all later work.
+
+Date: 2026-04-24
+Experiment: 2
+Boundary Removed: duration minimum
+Additional Control: added max_ticks safety cap (max_ticks = 100)
+Input:
+- job_a: submission_time=0, duration=-1
+- job_b: submission_time=1, duration=2
+- job_c: submission_time=2, duration=1
+
+Observed Behavior:
+-job_a started immediately
+-run did not complete naturally.
+-safety cap stopped execution at tick 100
+-safety cap did not fix behavior, but did make the failure measurable, bounded, reproducible.
+
+Output: False FIFO run incomplete: job_a reached max ticks (100)
